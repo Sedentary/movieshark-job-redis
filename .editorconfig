@@ -1,0 +1,8 @@
+# top-most EditorConfig file
+root = true
+
+charset = utf-8
+
+[**.js]
+indent_style = space
+indent_size = 4
