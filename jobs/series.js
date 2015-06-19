@@ -5,11 +5,14 @@
 var async = require('async');
 var request = require('request');
 var log = require('winston');
+var readTorrent = require('read-torrent');
+var peerflix = require('peerflix');
 var torrentStream = require('torrent-stream');
 var provider = require('../providers/serie');
 
 var _getSeries = function (page, cb) {
     var url = provider.get(page);
+    log.info('request %s', url);
     request(url, function (err, response, body) {
         if (err)
             return cb(err);
@@ -22,6 +25,7 @@ var _getSeries = function (page, cb) {
 
 var _getSerie = function (id, cb) {
     var url = provider.get('show/' + id);
+    log.info('request %s', url);
     request(url, function (err, response, body) {
         if (err)
             return cb(err);
@@ -32,6 +36,7 @@ var _getSerie = function (id, cb) {
 
 var _getPages = function (cb) {
     var url = provider.get('shows');
+    log.info('request %s', url);
     request(url, function (err, response, body) {
         if (err)
             return cb(err);
@@ -45,63 +50,92 @@ var _withEnd = function (name, end) {
 }
 
 var _getTorrent = function (magnet, cb) {
-    var engine = torrentStream(magnet);
+    readTorrent(magnet, function (err, torrent) {
+        if (err)
+            return cb(err);
 
-    engine.on('ready', function() {
-
-        async.each(engine.files, function (file, cbFile) {
-
-            cbFile();
-
+        async.each(torrent.files, function (file, cbFiles) {
             var filename = file.name;
 
-            if ( !_withEnd(filename, '.ogg') && !_withEnd(filename, '.mp4') && !_withEnd(filename, 'webm') ) {
+            if (!_withEnd(filename, '.ogg') && !_withEnd(filename, '.mp4') && !_withEnd(filename, '.webm') ) {
                 log.info('File: %s', filename);
             }
-        })
+        }, function () {
+            return cb();    
+        });        
+    })
+    // var engine = torrentStream(magnet);
 
-    });
+    // engine.on('ready', function() {
+    //     async.each(engine.files, function (file, cbFile) {
+
+    //         var filename = file.name;
+
+    //         if ( !_withEnd(filename, '.ogg') && !_withEnd(filename, '.mp4') && !_withEnd(filename, 'webm') ) {
+    //             log.info('File: %s', filename);
+    //         }
+
+    //         cbFile();
+    //     }, function () {
+    //         cb();
+    //     })
+    // });
+
+    // engine.on('download', function (fragment) {
+    //     console.log('Downloading ' + fragment + ' fragment...');
+    // });
+
+    // engine.on('upload', function (fragment, offset, length) {
+    //     console.log('Uploading ' + fragment + ' fragment...');
+    // });
 }
 
 _getPages(function (err, pages) {
     if (err)
         return log.error('GET PAGE: ', err);
 
-    log.info('Init');
-
-    async.each(pages, function (page, cbPages) {
+    async.eachSeries(pages, function (page, cbPages) {
 
         _getSeries(page, function (err, series) {
             if (err)
                 return log.error('GET SERIES: ', err);
 
-            async.each(series, function (serie, cbSeries) {
+            async.eachSeries(series, function (serie, cbSeries) {
 
                 _getSerie(serie._id, function (err, s) {
                     if (err)
                         return log.error('GET SERIE: ', err);
 
-                    async.each(s.episodes, function (episode, cbEpisodes) {
+                    async.eachSeries(s.episodes, function (episode, cbEpisodes) {
+                        async.eachSeries(episode.torrents, function (torrent, cbTorrents) {
+                            if (!torrent && !torrent.url)
+                                return cbTorrents(torrent);
 
-                        async.each(episode.torrents, function (torrent, cbTorrents) {
+                            _getTorrent(torrent.url, function (err) {
+                                cbTorrents(err);
+                            });
 
-                            _getTorrent(torrent.url);
+                        }, function (err) {
+                            if (err)
+                                return log.error('GET TORRENT: ', err);
 
+                            log.info('EPISODE %s\n', episode.title);
+                            cbEpisodes();
                         });
 
-                        cbEpisodes();
-
+                    }, function () {
+                        cbSeries();
                     });
 
                 });
 
-                cbSeries();
-
+            }, function () {
+                cbPages();
             })
         });
 
-        cbPages();
-
+    }, function () {
+        log.info('finished');
     });
 
 });
