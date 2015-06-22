@@ -8,45 +8,11 @@ var eventEmitter = new events.EventEmitter();
 var async = require('async');
 var request = require('request');
 var log = require('winston');
-var readTorrent = require('read-torrent');
-var peerflix = require('peerflix');
-var torrentStream = require('torrent-stream');
 var provider = require('../providers/serie');
+var torrentStream = require('torrent-stream');
 
 var _endsWith = function (name, end) {
     return name.indexOf(end) !== -1;
-};
-
-var _asyncLoop = function (iterations, func, callback) {
-    var index = 0;
-    var done = false;
-    var loop = {
-        next: function() {
-            if (done) {
-                return;
-            }
-
-            if (index < iterations) {
-                index++;
-                func(loop);
-
-            } else {
-                done = true;
-                callback();
-            }
-        },
-
-        iteration: function() {
-            return index - 1;
-        },
-
-        break: function() {
-            done = true;
-            callback();
-        }
-    };
-    loop.next();
-    return loop;
 };
 
 var _getSeries = function (page, cb) {
@@ -113,12 +79,10 @@ var _getPages = function (cb) {
 };
 
 var _getTorrentFiles = function (magnet, cb) {
-    readTorrent(magnet, function (err, torrent) {
-        if (err) {
-            return cb(err);
-        }
+    var engine = torrentStream(magnet);
 
-        cb(null, torrent.files);
+    engine.on('ready', function() {
+        return cb(null, engine.files);
     });
 };
 
@@ -225,32 +189,30 @@ var _processTorrents = function () {
 var _processTorrentsInformation = function () {
     log.info('Processing torrents information...');
 
-    _asyncLoop(torrentsList.length, function (loop) {
-        _getTorrentFiles(torrentsList[loop.iteration()], function (err, files) {
+    async.eachSeries(torrentsList, function iterator(torrent, cbTorrent) {
+        _getTorrentFiles(torrent, function (err, files) {
             if (err) {
                 log.error('Error processing torrent:' + err);
-                return cbTorrent();
+                return async.setImmediate(cbTorrent());
             }
 
-            console.log(files);
+            files.forEach(function(file) {
+                file = files[file];
 
-            //for (var file in files) {
-            //    file = files[file];
-            //
-            //    var filename = file.name;
-            //
-            //    if (!_endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
-            //        log.info('File: %s', filename);
-            //    } else {
-            //        log.info('Ok');
-            //    }
-            //}
+                var filename = file.name;
 
-            loop.next();
+                if (!_endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
+                    log.info('File: %s', filename);
+                } else {
+                    log.info('Ok');
+                }
+            });
+
+            async.setImmediate(cbTorrent());
         });
+    }, function () {
+        eventEmitter.emit('processFinished');
     });
-
-    eventEmitter.emit('processFinished');
 };
 
 eventEmitter.on('pagesLoaded', _processSeries);
