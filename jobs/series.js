@@ -21,7 +21,7 @@ var _getSeries = function (page, cb) {
         var series = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode <= 400) {
+            if (response.statusCode >= 200 && response.statusCode < 400) {
                 try {
                     series = JSON.parse(body);
                 } catch (ex) {
@@ -42,7 +42,7 @@ var _getSerie = function (id, cb) {
         var serie = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode <= 400) {
+            if (response.statusCode >= 200 && response.statusCode < 400) {
                 try {
                     serie = JSON.parse(body);
                 } catch (ex) {
@@ -63,7 +63,7 @@ var _getPages = function (cb) {
         var page = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode <= 400) {
+            if (response.statusCode >= 200 && response.statusCode < 400) {
                 try {
                     page = JSON.parse(body);
                 } catch (ex) {
