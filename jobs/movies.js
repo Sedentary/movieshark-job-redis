@@ -1,0 +1,111 @@
+/*jslint node: true */
+
+'use strict';
+
+var utils = require('../utils/common');
+
+var events = require('events');
+var async = require('async');
+var api = require('../api/movies');
+var torrentUtils = require('../utils/torrent');
+var log = require('../utils/logger')('moviesJob', 'Movies Job');
+
+var emitter = new events.EventEmitter();
+
+exports.run = function () {
+    emitter.emit('run');
+    _isRunning = true;
+};
+
+exports.isRunning = function () {
+    return _isRunning;
+};
+
+var _isRunning = false;
+
+var _count = function () {
+    log.info('Counting movies...');
+
+    api.countMovies(function (err, count) {
+        if (err) {
+            return log.error('COUNT MOVIES: ', err);
+        }
+
+        log.info(count + ' movies counted.');
+        emitter.emit('moviesCounted', count);
+    });
+};
+
+var _getMovies = function (count) {
+    log.info('Processing movies...');
+
+    var limit = 50,
+        pagination = (count / limit);
+
+    pagination = (utils.getPrecision(pagination) > 0) ? parseInt(pagination) + 1
+        : parseInt(pagination);
+
+    var moviesList = [];
+    async.times(pagination, function (page, cbPagination) {
+        api.getMovies(page, function (err, movies) {
+            if (err) {
+                return log.error('GET MOVIES: ', err);
+            }
+
+            async.each(movies, function (movie, cbMovies) {
+                moviesList.push(movie);
+                cbMovies();
+            }, function () {
+                cbPagination();
+            });
+        });
+    }, function () {
+        log.info(moviesList.length + ' movies loaded.');
+        emitter.emit('moviesLoaded', moviesList);
+    });
+};
+
+var _processTorrentsInformation = function (moviesList) {
+    log.info('Processing torrents information...');
+
+    async.eachSeries(moviesList, function iterator(movie, cbMovie) {
+        log.info('Processing movie ' + movie.title);
+
+        async.each(movie.torrents, function (torrent, cbTorrent) {
+            torrentUtils.getTorrentFiles(torrent.url, function (err, files) {
+                if (err) {
+                    log.error('Error processing torrent:' + err);
+                    return cbTorrent();
+                }
+
+                files.forEach(function (file) {
+                    file = files[file];
+
+                    var filename = file.name;
+
+                    if (!utils.endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm')) {
+                        log.info('File: %s', filename);
+                    } else {
+                        log.info('Ok');
+                    }
+                });
+
+                cbTorrent();
+            });
+        }, function () {
+            async.setImmediate(cbMovie());
+        });
+    }, function () {
+        emitter.emit('processFinished');
+    });
+};
+
+emitter.on('run', _count);
+emitter.on('moviesCounted', _getMovies);
+emitter.on('moviesLoaded', _processTorrentsInformation);
+emitter.on('processFinished', function () {
+    log.info('Process finished successfully!');
+    _isRunning = false;
+});
+
+emitter.emit('run');

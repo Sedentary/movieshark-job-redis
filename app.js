@@ -12,5 +12,16 @@ var _runSeriesJob = function () {
     }
 };
 
+var _runMoviesJob = function () {
+    if (!seriesJob.isRunning()) {
+        seriesJob.run();
+    } else {
+        log.info('Movies job is already running. Waiting till the next tick...');
+    }
+};
+
 // Executes every 1 minute(s)
-var _seriesSchedule = schedule.scheduleJob('*/1 * * * *', _runSeriesJob);
+var _seriesSchedule = schedule.scheduleJob('*/1 * * * *', _runMoviesJob);
+
+// Executes every 1 minute(s)
+var _moviesSchedule = schedule.scheduleJob('*/1 * * * *', _runSeriesJob);

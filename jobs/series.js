@@ -7,10 +7,10 @@ var utils = require('../utils/common');
 var events = require('events');
 var async = require('async');
 var api = require('../api/series');
+var torrentUtils = require('../utils/torrent');
+var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 var emitter = new events.EventEmitter();
-
-var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 exports.run = function () {
     emitter.emit('run');
@@ -124,7 +124,7 @@ var _processTorrentsInformation = function (torrentsList) {
     async.eachSeries(torrentsList, function iterator(torrent, cbTorrent) {
         log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie);
 
-        api.getTorrentFiles(torrent.torrent, function (err, files) {
+        torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
                 log.error('Error processing torrent:' + err);
                 return async.setImmediate(cbTorrent());

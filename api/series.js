@@ -2,9 +2,8 @@
 
 var request = require('request');
 var provider = require('../providers/serie');
-var torrentStream = require('torrent-stream');
 
-exports.getSeries = function (page, cb) {
+exports.getSeries = function (page, callback) {
     var url = provider.get(page);
     request(url, function (err, response, body) {
         var series = null;
@@ -21,11 +20,11 @@ exports.getSeries = function (page, cb) {
             }
         }
 
-        return cb(err, series);
+        return callback(err, series);
     });
 };
 
-exports.getSerie = function (id, cb) {
+exports.getSerie = function (id, callback) {
     var url = provider.get('show/' + id);
     request(url, function (err, response, body) {
         var serie = null;
@@ -42,11 +41,11 @@ exports.getSerie = function (id, cb) {
             }
         }
 
-        return cb(err, serie);
+        return callback(err, serie);
     });
 };
 
-exports.getPages = function (cb) {
+exports.getPages = function (callback) {
     var url = provider.get('shows');
     request(url, function (err, response, body) {
         var page = null;
@@ -63,14 +62,6 @@ exports.getPages = function (cb) {
             }
         }
 
-        return cb(err, page);
-    });
-};
-
-exports.getTorrentFiles = function (magnet, cb) {
-    var engine = torrentStream(magnet);
-
-    engine.on('ready', function() {
-        return cb(null, engine.files);
+        return callback(err, page);
     });
 };
