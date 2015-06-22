@@ -8,4 +8,4 @@ exports.base = _base;
 
 exports.get = function (uri) {
     return _base + uri;
-}
+};

@@ -2,106 +2,32 @@
 
 'use strict';
 
+var utils = require('../utils/common');
+
 var events = require('events');
-var eventEmitter = new events.EventEmitter();
-
 var async = require('async');
-var request = require('request');
-var log = require('winston');
-var provider = require('../providers/serie');
-var torrentStream = require('torrent-stream');
+var api = require('../api/series');
 
-var _endsWith = function (name, end) {
-    return name.indexOf(end) !== -1;
+var emitter = new events.EventEmitter();
+
+var log = require('../utils/logger')('seriesJob', 'Series Job');
+
+exports.run = function () {
+    emitter.emit('run');
+    _isRunning = true;
 };
 
-var _getSeries = function (page, cb) {
-    var url = provider.get(page);
-    request(url, function (err, response, body) {
-        var series = null;
-
-        if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    series = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing series for page ' + page + ': ' + ex.message;
-                }
-            } else {
-                err = 'Get series for page ' + page + ' failed with status: ' + response.statusCode
-            }
-        }
-
-        return cb(err, series);
-    });
+exports.isRunning = function () {
+    return _isRunning;
 };
 
-var _getSerie = function (id, cb) {
-    var url = provider.get('show/' + id);
-    request(url, function (err, response, body) {
-        var serie = null;
+var _isRunning = false;
 
-        if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    serie = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing data for serie ' + id + ': ' + ex.message;
-                }
-            } else {
-                err = 'Get data for serie ' + id + ' failed with status: ' + response.statusCode
-            }
-        }
-
-        return cb(err, serie);
-    });
-};
-
-var _getPages = function (cb) {
-    var url = provider.get('shows');
-    request(url, function (err, response, body) {
-        var page = null;
-
-        if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    page = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing pages: ' + ex.message;
-                }
-            } else {
-                err = 'Get pages failed with status: ' + response.statusCode
-            }
-        }
-
-        return cb(err, page);
-    });    
-};
-
-var _getTorrentFiles = function (magnet, cb) {
-    var engine = torrentStream(magnet);
-
-    engine.on('ready', function() {
-        return cb(null, engine.files);
-    });
-};
-
-/**####################################################################################*/
-var pagesList = [];
-var seriesList = [];
-var episodesList = [];
-var torrentsList = [];
-
-var _start = function () {
-    log.info('Starting process');
-
-    _processPages();
-};
-
-var _processPages = function () {
+var _loadPages = function () {
     log.info('Processing pages...');
 
-    _getPages(function (err, pages) {
+    var pagesList = [];
+    api.getPages(function (err, pages) {
         if (err) {
             return log.error('GET PAGE: ', err);
         }
@@ -111,16 +37,17 @@ var _processPages = function () {
             return cbPages();
         }, function () {
             log.info(pagesList.length + ' pages loaded.');
-            eventEmitter.emit('pagesLoaded');
+            emitter.emit('pagesLoaded', pagesList);
         });
     });
 };
 
-var _processSeries = function () {
+var _loadSeries = function (pagesList) {
     log.info('Processing series...');
 
+    var seriesList = [];
     async.each(pagesList, function (page, cbPages) {
-        _getSeries(page, function (err, series) {
+        api.getSeries(page, function (err, series) {
             if (err) {
                 log.error('GET SERIES: ', err);
                 return cbPages();
@@ -135,22 +62,23 @@ var _processSeries = function () {
         });
     }, function () {
         log.info(seriesList.length + ' series loaded.');
-        eventEmitter.emit('seriesLoaded');
+        emitter.emit('seriesLoaded', seriesList);
     });
 };
 
-var _processEpisodes = function () {
+var _loadEpisodes = function (seriesList) {
     log.info('Processing episodes...');
 
+    var episodesList = [];
     async.each(seriesList, function (serie, cbSeriesList) {
-        _getSerie(serie, function (err, s) {
+        api.getSerie(serie, function (err, s) {
             if (err) {
                 log.error('GET SERIE: ', err);
                 return cbSeriesList();
             }
 
             async.each(s.episodes, function (episode, cbEpisodes) {
-                episodesList.push(episode);
+                episodesList.push({serie: serie, episode : episode});
                 cbEpisodes();
             }, function () {
                 cbSeriesList();
@@ -159,22 +87,26 @@ var _processEpisodes = function () {
         });
     }, function() {
         log.info(episodesList.length + ' episodes loaded.');
-        eventEmitter.emit('episodesLoaded');
+        emitter.emit('episodesLoaded', episodesList);
     });
 };
 
-var _processTorrents = function () {
+var _loadTorrents = function (episodesList) {
     log.info('Processing torrents...');
 
+    var torrentsList = [];
     async.each(episodesList, function (episode, cbEpisodesList) {
-        if (!episode || !episode.torrents) {
-            log.error('Episode ' + episode.episode + ' has problems.');
+        var epi = episode.episode;
+        var serie = episode.serie;
+
+        if (!epi || !epi.torrents) {
+            log.error('Episode ' + epi.episode + ' from serie ' + serie + ' has problems.');
             return cbEpisodesList();
         }
 
-        async.each(episode.torrents, function (torrent, cbTorrents) {
+        async.each(epi.torrents, function (torrent, cbTorrents) {
             if (torrent && torrent.url) {
-                torrentsList.push(torrent.url);
+                torrentsList.push({serie : serie, episode : epi, torrent : torrent.url});
             }
             cbTorrents();
         }, function () {
@@ -182,15 +114,17 @@ var _processTorrents = function () {
         });
     }, function () {
         log.info(torrentsList.length + ' torrents loaded.');
-        eventEmitter.emit('torrentsLoaded');
+        emitter.emit('torrentsLoaded', torrentsList);
     });
 };
 
-var _processTorrentsInformation = function () {
+var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
     async.eachSeries(torrentsList, function iterator(torrent, cbTorrent) {
-        _getTorrentFiles(torrent, function (err, files) {
+        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie);
+
+        api.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
                 log.error('Error processing torrent:' + err);
                 return async.setImmediate(cbTorrent());
@@ -201,7 +135,7 @@ var _processTorrentsInformation = function () {
 
                 var filename = file.name;
 
-                if (!_endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
+                if (!utils.endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
                     log.info('File: %s', filename);
                 } else {
                     log.info('Ok');
@@ -211,16 +145,16 @@ var _processTorrentsInformation = function () {
             async.setImmediate(cbTorrent());
         });
     }, function () {
-        eventEmitter.emit('processFinished');
+        emitter.emit('processFinished');
     });
 };
 
-eventEmitter.on('pagesLoaded', _processSeries);
-eventEmitter.on('seriesLoaded', _processEpisodes);
-eventEmitter.on('episodesLoaded', _processTorrents);
-eventEmitter.on('torrentsLoaded', _processTorrentsInformation);
-eventEmitter.on('processFinished', function () {
-    log.info('Process finished successfully!')
+emitter.on('run', _loadPages);
+emitter.on('pagesLoaded', _loadSeries);
+emitter.on('seriesLoaded', _loadEpisodes);
+emitter.on('episodesLoaded', _loadTorrents);
+emitter.on('torrentsLoaded', _processTorrentsInformation);
+emitter.on('processFinished', function () {
+    log.info('Process finished successfully!');
+    _isRunning = false;
 });
-
-_start();
