@@ -2,6 +2,9 @@
 
 'use strict';
 
+var events = require('events');
+var eventEmitter = new events.EventEmitter();
+
 var async = require('async');
 var request = require('request');
 var log = require('winston');
@@ -10,111 +13,153 @@ var peerflix = require('peerflix');
 var torrentStream = require('torrent-stream');
 var provider = require('../providers/serie');
 
+var _endsWith = function (name, end) {
+    return name.indexOf(end) !== -1;
+};
+
+var _asyncLoop = function (iterations, func, callback) {
+    var index = 0;
+    var done = false;
+    var loop = {
+        next: function() {
+            if (done) {
+                return;
+            }
+
+            if (index < iterations) {
+                index++;
+                func(loop);
+
+            } else {
+                done = true;
+                callback();
+            }
+        },
+
+        iteration: function() {
+            return index - 1;
+        },
+
+        break: function() {
+            done = true;
+            callback();
+        }
+    };
+    loop.next();
+    return loop;
+};
+
 var _getSeries = function (page, cb) {
     var url = provider.get(page);
-    log.info('request %s', url);
     request(url, function (err, response, body) {
-        if (err)
-            return cb(err);
+        var series = null;
 
-        var series = body ? JSON.parse(body) : [];
+        if (!err) {
+            if (response.statusCode >= 200 && response.statusCode <= 400) {
+                try {
+                    series = JSON.parse(body);
+                } catch (ex) {
+                    err = 'Error parsing series for page ' + page + ': ' + ex.message;
+                }
+            } else {
+                err = 'Get series for page ' + page + ' failed with status: ' + response.statusCode
+            }
+        }
 
-        return cb(null, series);
+        return cb(err, series);
     });
 };
 
 var _getSerie = function (id, cb) {
     var url = provider.get('show/' + id);
-    log.info('request %s', url);
     request(url, function (err, response, body) {
-        if (err) {
-            return cb(err);
+        var serie = null;
+
+        if (!err) {
+            if (response.statusCode >= 200 && response.statusCode <= 400) {
+                try {
+                    serie = JSON.parse(body);
+                } catch (ex) {
+                    err = 'Error parsing data for serie ' + id + ': ' + ex.message;
+                }
+            } else {
+                err = 'Get data for serie ' + id + ' failed with status: ' + response.statusCode
+            }
         }
 
-        var serie;
-        try {
-            serie = JSON.parse(body);
-        } catch (e) {
-            return cb(e);
-        }
-
-        return cb(null, serie);
+        return cb(err, serie);
     });
 };
 
 var _getPages = function (cb) {
     var url = provider.get('shows');
-    log.info('request %s', url);
     request(url, function (err, response, body) {
-        if (err) {
-            return cb(err);
+        var page = null;
+
+        if (!err) {
+            if (response.statusCode >= 200 && response.statusCode <= 400) {
+                try {
+                    page = JSON.parse(body);
+                } catch (ex) {
+                    err = 'Error parsing pages: ' + ex.message;
+                }
+            } else {
+                err = 'Get pages failed with status: ' + response.statusCode
+            }
         }
 
-        return cb(null, JSON.parse(body));
+        return cb(err, page);
     });    
 };
 
-var _endsWith = function (name, end) {
-    return name.indexOf(end) !== -1;
-};
-
-var _getTorrent = function (magnet, cb) {
+var _getTorrentFiles = function (magnet, cb) {
     readTorrent(magnet, function (err, torrent) {
         if (err) {
             return cb(err);
         }
 
-        async.each(torrent.files, function (file, cbFiles) {
-            var filename = file.name;
-
-            if (!_endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
-                log.info('File: %s', filename);
-            }
-        }, function () {
-            return cb();    
-        });        
+        cb(null, torrent.files);
     });
-    // var engine = torrentStream(magnet);
-
-    // engine.on('ready', function() {
-    //     async.each(engine.files, function (file, cbFile) {
-
-    //         var filename = file.name;
-
-    //         if ( !_withEnd(filename, '.ogg') && !_withEnd(filename, '.mp4') && !_withEnd(filename, 'webm') ) {
-    //             log.info('File: %s', filename);
-    //         }
-
-    //         cbFile();
-    //     }, function () {
-    //         cb();
-    //     })
-    // });
-
-    // engine.on('download', function (fragment) {
-    //     console.log('Downloading ' + fragment + ' fragment...');
-    // });
-
-    // engine.on('upload', function (fragment, offset, length) {
-    //     console.log('Uploading ' + fragment + ' fragment...');
-    // });
 };
 
-_getPages(function (err, pages) {
-    if (err) {
-        return log.error('GET PAGE: ', err);
-    }
+/**####################################################################################*/
+var pagesList = [];
+var seriesList = [];
+var episodesList = [];
+var torrentsList = [];
 
-    var seriesList = [];
-    var episodesList = [];
-    var torrentsList = [];
+var _start = function () {
+    log.info('Starting process');
 
-    async.each(pages, function (page, cbPages) {
+    _processPages();
+};
 
+var _processPages = function () {
+    log.info('Processing pages...');
+
+    _getPages(function (err, pages) {
+        if (err) {
+            return log.error('GET PAGE: ', err);
+        }
+
+        async.each(pages, function (page, cbPages) {
+            pagesList.push(page);
+            return cbPages();
+        }, function () {
+            log.info(pagesList.length + ' pages loaded.');
+            eventEmitter.emit('pagesLoaded');
+        });
+    });
+};
+
+var _processSeries = function () {
+    log.info('Processing series...');
+
+    async.each(pagesList, function (page, cbPages) {
         _getSeries(page, function (err, series) {
             if (err) {
                 log.error('GET SERIES: ', err);
-                cbPages();
+                return cbPages();
             }
 
             async.each(series, function (serie, cbSeries) {
@@ -122,60 +167,98 @@ _getPages(function (err, pages) {
                 cbSeries();
             }, function () {
                 cbPages();
-            })
+            });
         });
-
     }, function () {
         log.info(seriesList.length + ' series loaded.');
+        eventEmitter.emit('seriesLoaded');
+    });
+};
 
-        async.each(seriesList, function (serie, cbSeriesList) {
-            _getSerie(serie, function (err, s) {
-                if (err) {
-                    log.error('GET SERIE: ', err);
-                    cbSeriesList();
-                }
+var _processEpisodes = function () {
+    log.info('Processing episodes...');
 
-                async.each(s.episodes, function (episode, cbEpisodes) {
-                    episodesList.push(episode);
-                    cbEpisodes();
-                }, function () {
-                    cbSeriesList();
-                });
+    async.each(seriesList, function (serie, cbSeriesList) {
+        _getSerie(serie, function (err, s) {
+            if (err) {
+                log.error('GET SERIE: ', err);
+                return cbSeriesList();
+            }
 
-            });
-        }, function() {
-            log.info(episodesList.length + ' episodes loaded.');
-
-            async.each(episodesList, function (episode, cbEpisodesList) {
-                if (!episode || !episode.torrents) {
-                    log.error('Episode ' + episode.episode + ' has problems.');
-                    cbEpisodesList();
-                }
-
-                async.each(episode.torrents, function (torrent, cbTorrents) {
-                    if (torrent && torrent.url) {
-                        torrentsList.push(torrent.url);
-                    }
-                    cbTorrents();
-                }, function () {
-                    cbEpisodesList();
-                });
+            async.each(s.episodes, function (episode, cbEpisodes) {
+                episodesList.push(episode);
+                cbEpisodes();
             }, function () {
-                log.info(torrentsList.length + ' torrents loaded.');
-
-                async.each(torrentsList, function (torrent, cbTorrent) {
-                    _getTorrent(torrent, function (err) {
-                        if (err) {
-                            log.error('GET TORRENT: ' + err);
-                        }
-
-                        cbTorrent();
-                    });
-                }, function () {
-                    log.info('Process finished!');
-                });
+                cbSeriesList();
             });
+
+        });
+    }, function() {
+        log.info(episodesList.length + ' episodes loaded.');
+        eventEmitter.emit('episodesLoaded');
+    });
+};
+
+var _processTorrents = function () {
+    log.info('Processing torrents...');
+
+    async.each(episodesList, function (episode, cbEpisodesList) {
+        if (!episode || !episode.torrents) {
+            log.error('Episode ' + episode.episode + ' has problems.');
+            return cbEpisodesList();
+        }
+
+        async.each(episode.torrents, function (torrent, cbTorrents) {
+            if (torrent && torrent.url) {
+                torrentsList.push(torrent.url);
+            }
+            cbTorrents();
+        }, function () {
+            cbEpisodesList();
+        });
+    }, function () {
+        log.info(torrentsList.length + ' torrents loaded.');
+        eventEmitter.emit('torrentsLoaded');
+    });
+};
+
+var _processTorrentsInformation = function () {
+    log.info('Processing torrents information...');
+
+    _asyncLoop(torrentsList.length, function (loop) {
+        _getTorrentFiles(torrentsList[loop.iteration()], function (err, files) {
+            if (err) {
+                log.error('Error processing torrent:' + err);
+                return cbTorrent();
+            }
+
+            console.log(files);
+
+            //for (var file in files) {
+            //    file = files[file];
+            //
+            //    var filename = file.name;
+            //
+            //    if (!_endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
+            //        log.info('File: %s', filename);
+            //    } else {
+            //        log.info('Ok');
+            //    }
+            //}
+
+            loop.next();
         });
     });
 
+    eventEmitter.emit('processFinished');
+};
+
+eventEmitter.on('pagesLoaded', _processSeries);
+eventEmitter.on('seriesLoaded', _processEpisodes);
+eventEmitter.on('episodesLoaded', _processTorrents);
+eventEmitter.on('torrentsLoaded', _processTorrentsInformation);
+eventEmitter.on('processFinished', function () {
+    log.info('Process finished successfully!')
 });
+
+_start();
