@@ -121,7 +121,7 @@ var _loadTorrents = function (episodesList) {
 var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
-    async.eachLimit(torrentsList, 10, function (torrent, cbTorrent) {
+    async.eachSeries(torrentsList, function (torrent, cbTorrent) {
         var serie = torrent.serie;
         log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + serie._id);
 

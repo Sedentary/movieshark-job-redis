@@ -69,7 +69,7 @@ var _processTorrentsInformation = function (moviesList) {
     async.eachLimit(moviesList, 10, function (movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
-        async.each(movie.torrents, function (torrent, cbTorrent) {
+        async.eachSeries(movie.torrents, function (torrent, cbTorrent) {
             var torr = {
                 name: movie.title_long,
                 hash: torrent.hash
