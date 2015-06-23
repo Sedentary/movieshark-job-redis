@@ -1,6 +1,6 @@
 'use strict';
 
-var schedule = require('node-schedule');
+var scheduler = require('node-schedule');
 var seriesJob = require('./jobs/series');
 var log = require('./utils/logger')('main', 'Main');
 
@@ -21,7 +21,7 @@ var _runMoviesJob = function () {
 };
 
 // Executes every 1 minute(s)
-var _seriesSchedule = schedule.scheduleJob('*/1 * * * *', _runMoviesJob);
+var _seriesSchedule = scheduler.scheduleJob('*/1 * * * *', _runMoviesJob);
 
 // Executes every 1 minute(s)
-var _moviesSchedule = schedule.scheduleJob('*/1 * * * *', _runSeriesJob);
+var _moviesSchedule = scheduler.scheduleJob('*/1 * * * *', _runSeriesJob);
