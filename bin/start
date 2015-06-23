@@ -14,41 +14,17 @@ var pm2 = require('pm2');
 //   });
 // });
 
-function start () {
-  pm2.connect(function () {
-    pm2.start({
-      script    : 'app.js',
-      exec_mode : 'cluster',
-      name: 'movieshark-job-redis',
-      instances: 1,
-      max_memory_restart : '510M'
-    }, function(err, apps) {
-      if (err)
-        log.error('ERROR PM2: ', err);
+pm2.connect(function () {
+  pm2.start({
+    script    : 'app.js',
+    exec_mode : 'cluster',
+    name: 'movieshark-job-redis',
+    instances: 1,
+    max_memory_restart : '500M'
+  }, function(err, apps) {
+    if (err)
+      log.error('ERROR PM2: ', err);
 
-      pm2.disconnect();
-    });
-  });  
-}
-
-if (process.env.NODE_ENV !== 'development') {
-  pm2.launchBus(function(err, bus) {
-    bus.on('close', function() {
-      start();
-    });
-
-    bus.on('pm2:kill', function() {
-      start();
-    });
-
-    bus.on('process:stop', function() {
-      start();
-    });
-
-    bus.on('process:exit', function() {
-      start();
-    });
+    pm2.disconnect();
   });
-}
-
-start();
+});

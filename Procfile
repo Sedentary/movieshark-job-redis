@@ -1,1 +1,1 @@
-web: node app.js --no-daemon
+web: node ./bin/start
