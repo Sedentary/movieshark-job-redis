@@ -19,7 +19,7 @@ exports.magnetize = function (torrent) {
 
     //noinspection JSLint
     var magnet = 'magnet:?xt=urn:btih:' + torrent.hash;
-    magnet += '&dn=' + encodeURI(torrent.name);
+    magnet += '&dn=' + encodeURIComponent(torrent.name);
     trackers.forEach(function (tracker) {
         magnet += '&tr=' + tracker;
     });
