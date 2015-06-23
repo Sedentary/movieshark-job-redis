@@ -111,5 +111,3 @@ emitter.on('processFinished', function () {
     log.info('Process finished successfully!');
     _isRunning = false;
 });
-
-emitter.emit('run');
