@@ -146,7 +146,7 @@ var _processTorrentsInformation = function (torrentsList) {
                         }
                     });
                 } else {
-                    log.info('Ok');
+                    log.info('File: %s', filename);
                 }
             });
 
