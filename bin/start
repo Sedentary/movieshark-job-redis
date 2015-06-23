@@ -32,30 +32,32 @@ function start () {
   });  
 }
 
-pm2.launchBus(function(err, bus) {
-  bus.on('process:exception', function() {
-    start();
-  });
+if (process.env.NODE_ENV !== 'development') {
+  pm2.launchBus(function(err, bus) {
+    bus.on('process:exception', function() {
+      start();
+    });
 
-  bus.on('log:err', function() {
-    start();
-  });
-  
-  bus.on('close', function() {
-    start();
-  });
+    bus.on('log:err', function() {
+      start();
+    });
 
-  bus.on('pm2:kill', function() {
-    start();
-  });
+    bus.on('close', function() {
+      start();
+    });
 
-  bus.on('process:stop', function() {
-    start();
-  });
+    bus.on('pm2:kill', function() {
+      start();
+    });
 
-  bus.on('process:exit', function() {
-    start();
+    bus.on('process:stop', function() {
+      start();
+    });
+
+    bus.on('process:exit', function() {
+      start();
+    });
   });
-});
+}
 
 start();
