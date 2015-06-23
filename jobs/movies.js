@@ -8,7 +8,7 @@ var events = require('events');
 var async = require('async');
 var api = require('../api/movies');
 var torrentUtils = require('../utils/torrent');
-var client = require('../utils/redis').client;
+var client = require('../utils/redis').getClient();
 var log = require('../utils/logger')('moviesJob', 'Movies Job');
 
 var emitter = new events.EventEmitter();
@@ -84,7 +84,16 @@ var _processTorrentsInformation = function (moviesList) {
                     var filename = file.name;
 
                     if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                        log.info('File: %s', filename);
+                        client.get(movie.slug, function (err, movie) {
+                        if (err)
+                            return log.error('Error processing redis: ', err);
+
+                        if (!movie) {
+                            client.rpush('movies-valid', movie);
+                            client.set(movie.slug, movie);
+                            log.info('File: %s', filename);
+                        }
+                    });
                     } else {
                         log.warn('File: %s', filename);
                     }

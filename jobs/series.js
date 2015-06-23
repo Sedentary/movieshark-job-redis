@@ -121,7 +121,8 @@ var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
     async.eachLimit(torrentsList, 10, function (torrent, cbTorrent) {
-        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie._id);
+        var serie = torrent.serie;
+        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + serie._id);
 
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
@@ -132,11 +133,19 @@ var _processTorrentsInformation = function (torrentsList) {
             files.forEach(function (file) {
                 var filename = file.name;
 
-                log.info('SERIE: ', torrent.serie);
                 if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                    log.info('File: %s', filename);
+                    client.get(serie.slug, function (err, serie) {
+                        if (err)
+                            return log.error('Error processing redis: ', err);
+
+                        if (!serie) {
+                            client.rpush('series-valid', serie);
+                            client.set(serie.slug, serie);
+                            log.info('File: %s', filename);
+                        }
+                    });
                 } else {
-                    log.warn('File: %s', filename);
+                    log.info('Ok');
                 }
             });
 
