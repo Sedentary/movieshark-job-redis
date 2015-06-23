@@ -44,12 +44,12 @@ var _getMovies = function (count) {
 
     pagination = (utils.getPrecision(pagination) > 0) ? parseInt(pagination, 0) + 1 : parseInt(pagination, 0);
 
-    async.timesSeries(pagination, function (page, cbPagination) {
+    async.times(pagination, function (page, cbPagination) {
         api.getMovies(page, function (err, movies) {
             if (err)
                 return log.error('GET MOVIES AT ' + page + ': ', err);
 
-            async.eachSeries(movies, function (movie, cbMovies) {
+            async.each(movies, function (movie, cbMovies) {
                 moviesList.push(movie);
                 cbMovies();
             }, function () {
@@ -68,7 +68,7 @@ var _processTorrentsInformation = function (moviesList) {
     async.eachSeries(moviesList, function iterator(movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
-        async.eachSeries(movie.torrents, function (torrent, cbTorrent) {
+        async.each(movie.torrents, function (torrent, cbTorrent) {
             var torr = {
                 name: movie.title_long,
                 hash: torrent.hash
