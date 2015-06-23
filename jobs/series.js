@@ -53,7 +53,7 @@ var _loadSeries = function (pagesList) {
             }
 
             async.each(series, function (serie, cbSeries) {
-                seriesList.push(serie._id);
+                seriesList.push(serie);
                 cbSeries();
             }, function () {
                 cbPages();
@@ -70,14 +70,13 @@ var _loadEpisodes = function (seriesList) {
 
     var episodesList = [];
     async.each(seriesList, function (serie, cbSeriesList) {
-        api.getSerie(serie, function (err, s) {
+        api.getSerie(serie._id, function (err, s) {
             if (err) {
-                log.error('GET SERIE AT ' + serie + ': ', err);
+                log.error('GET SERIE AT ' + serie._id + ': ', err);
                 return cbSeriesList();
             }
 
             async.each(s.episodes, function (episode, cbEpisodes) {
-                log.info('SERIE: ', serie);
                 episodesList.push({serie: serie, episode : episode});
                 cbEpisodes();
             }, function () {
@@ -100,7 +99,7 @@ var _loadTorrents = function (episodesList) {
             serie = episode.serie;
 
         if (!epi || !epi.torrents) {
-            log.error('Episode ' + epi.episode + ' from serie ' + serie + ' has problems.');
+            log.error('Episode ' + epi.episode + ' from serie ' + serie._id + ' has problems.');
             return cbEpisodesList();
         }
 
@@ -122,7 +121,7 @@ var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
     async.eachSeries(torrentsList, function (torrent, cbTorrent) {
-        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie);
+        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie._id);
 
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
@@ -134,6 +133,7 @@ var _processTorrentsInformation = function (torrentsList) {
                 var filename = file.name;
 
                 if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
+                    log.info('SERIE: ', torrent.serie);
                     log.info('File: %s', filename);
                 } else {
                     log.info('Ok');
