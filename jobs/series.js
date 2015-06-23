@@ -105,6 +105,7 @@ var _loadTorrents = function (episodesList) {
 
         async.each(epi.torrents, function (torrent, cbTorrents) {
             if (torrent && torrent.url) {
+                log.info('SERIE: ', serie)
                 torrentsList.push({serie : serie, episode : epi, torrent : torrent.url});
             }
             cbTorrents();
@@ -120,7 +121,7 @@ var _loadTorrents = function (episodesList) {
 var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(torrentsList, function iterator(torrent, cbTorrent) {
+    async.eachSeries(torrentsList, function (torrent, cbTorrent) {
         log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie);
 
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
