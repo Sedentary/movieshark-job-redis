@@ -66,7 +66,7 @@ var _getMovies = function (count) {
 var _processTorrentsInformation = function (moviesList) {
     log.info('Processing torrents information...');
 
-    async.eachLimit(moviesList, 10, function (movie, cbMovie) {
+    async.eachSeries(moviesList, function (movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
         async.eachSeries(movie.torrents, function (torrent, cbTorrent) {
