@@ -135,18 +135,18 @@ var _processTorrentsInformation = function (torrentsList) {
                 var filename = file.name;
 
                 if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                    client.get(serie.slug, function (err, serie) {
+                    client.get(serie.slug, function (err, ser) {
                         if (err)
                             return log.error('Error processing redis: ', err);
 
-                        if (!serie) {
+                        if (!ser) {
                             client.rpush('series-valid', serie);
                             client.set(serie.slug, serie);
                             log.info('File: %s', filename);
                         }
                     });
                 } else {
-                    log.info('Ok');
+                    log.info('File: %s', filename);
                 }
             });
 
