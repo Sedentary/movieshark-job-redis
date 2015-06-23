@@ -29,7 +29,7 @@ var _loadPages = function () {
     var pagesList = [];
     api.getPages(function (err, pages) {
         if (err) {
-            return log.error('GET PAGE: ', err);
+            return log.error('GET PAGES: ', err);
         }
 
         async.each(pages, function (page, cbPages) {
@@ -49,7 +49,7 @@ var _loadSeries = function (pagesList) {
     async.each(pagesList, function (page, cbPages) {
         api.getSeries(page, function (err, series) {
             if (err) {
-                log.error('GET SERIES: ', err);
+                log.error('GET SERIES AT ' + page + ': ', err);
                 return cbPages();
             }
 
@@ -73,7 +73,7 @@ var _loadEpisodes = function (seriesList) {
     async.each(seriesList, function (serie, cbSeriesList) {
         api.getSerie(serie, function (err, s) {
             if (err) {
-                log.error('GET SERIE: ', err);
+                log.error('GET SERIE AT ' + serie + ': ', err);
                 return cbSeriesList();
             }
 

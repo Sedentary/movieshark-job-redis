@@ -3,21 +3,36 @@
 var request = require('request');
 var provider = require('../providers/serie');
 
+var _responseHandler = function (response, body, callback) {
+    var err = null,
+        data = null;
+
+    if (response.statusCode >= 200 && response.statusCode < 400) {
+        try {
+            data = JSON.parse(body);
+        } catch (ex) {
+            err = 'Error parsing: ' + ex.message;
+        }
+    } else {
+        err = 'Failed with status: ' + response.statusCode
+    }
+
+    callback(err, data);
+};
+
 exports.getSeries = function (page, callback) {
     var url = provider.get(page);
     request(url, function (err, response, body) {
         var series = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    series = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing series for page ' + page + ': ' + ex.message;
+            _responseHandler(response, body, function (error, data) {
+                if (error) {
+                    err = error;
+                } else {
+                    series = data;
                 }
-            } else {
-                err = 'Get series for page ' + page + ' failed with status: ' + response.statusCode
-            }
+            });
         }
 
         return callback(err, series);
@@ -30,15 +45,13 @@ exports.getSerie = function (id, callback) {
         var serie = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    serie = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing data for serie ' + id + ': ' + ex.message;
+            _responseHandler(response, body, function (error, data) {
+                if (error) {
+                    err = error;
+                } else {
+                    serie = data;
                 }
-            } else {
-                err = 'Get data for serie ' + id + ' failed with status: ' + response.statusCode
-            }
+            });
         }
 
         return callback(err, serie);
@@ -51,15 +64,13 @@ exports.getPages = function (callback) {
         var page = null;
 
         if (!err) {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-                try {
-                    page = JSON.parse(body);
-                } catch (ex) {
-                    err = 'Error parsing pages: ' + ex.message;
+            _responseHandler(response, body, function (error, data) {
+                if (error) {
+                    err = error;
+                } else {
+                    page = data;
                 }
-            } else {
-                err = 'Get pages failed with status: ' + response.statusCode
-            }
+            });
         }
 
         return callback(err, page);
