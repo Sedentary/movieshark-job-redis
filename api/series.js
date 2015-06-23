@@ -1,76 +1,61 @@
 /*jslint node: true */
+
 'use strict';
 
 var request = require('request');
 var provider = require('../providers/serie');
 
 var _responseHandler = function (response, body, callback) {
-    var err = null,
-        data = null;
-
     if (response.statusCode >= 200 && response.statusCode < 400) {
         try {
-            data = JSON.parse(body);
+            var data = JSON.parse(body);
+            return callback(null, data);
         } catch (ex) {
-            err = 'Error parsing (' + response.statusCode + '): ' + ex;
+            return callback('Error parsing (' + response.statusCode + '): ' + ex);
         }
-    } else {
-        err = 'Failed with status: ' + response.statusCode;
     }
 
-    callback(err, data);
+    return callback('Failed with status: ' + response.statusCode);
 };
 
 exports.getSeries = function (page, callback) {
     request(provider.get(page), function (err, response, body) {
-        var series = null;
+        if (err)
+            return callback(err);
 
-        if (!err) {
-            _responseHandler(response, body, function (error, data) {
-                if (error) {
-                    err = error;
-                } else {
-                    series = data;
-                }
-            });
-        }
+        _responseHandler(response, body, function (error, data) {
+            if (error)
+                return callback(error);
 
-        return callback(err, series);
+            return callback(null, data);
+        });
     });
 };
 
 exports.getSerie = function (id, callback) {
     request(provider.get('show/' + id), function (err, response, body) {
-        var serie = null;
+        if (err)
+            return callback(err);
+        
+        _responseHandler(response, body, function (error, data) {
+            if (error)
+                return callback(error);
 
-        if (!err) {
-            _responseHandler(response, body, function (error, data) {
-                if (error) {
-                    err = error;
-                } else {
-                    serie = data;
-                }
-            });
-        }
-
-        return callback(err, serie);
+            return callback(null, data);
+        });
     });
 };
 
 exports.getPages = function (callback) {
     request(provider.get('shows'), function (err, response, body) {
-        var page = null;
+        if (err)
+            return callback(err);
 
-        if (!err) {
-            _responseHandler(response, body, function (error, data) {
-                if (error) {
-                    err = error;
-                } else {
-                    page = data;
-                }
-            });
-        }
+        _responseHandler(response, body, function (error, data) {
+            if (error)
+                return callback(error);
 
-        return callback(err, page);
+            return callback(null, data);
+        });
     });
 };

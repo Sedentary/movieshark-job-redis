@@ -1,63 +1,51 @@
 /*jslint node: true */
+
 'use strict';
 
 var request = require('request');
 var provider = require('../providers/movie');
 
 var _responseHandler = function (response, body, callback) {
-    var err = null,
-        data = null;
-
     if (response.statusCode >= 200 && response.statusCode < 400) {
         try {
-            data = JSON.parse(body);
-            if (data.status !== 'ok') {
-                err = 'Query failed';
-            } else {
-                data = data.data;
-            }
+            var data = JSON.parse(body);
+            
+            if (data.status !== 'ok')
+                return callback('Query failed');
+            
+            return callback(null, data.data);
         } catch (ex) {
-            err = ex;
+            return callback(ex);
         }
-    } else {
-        err = 'Failed with status: ' + response.statusCode;
     }
 
-    callback(err, data);
+    return callback('Failed with status: ' + response.statusCode);
 };
 
 exports.countMovies = function (callback) {
     request(provider.get('list_movies.json?limit=1'), function (err, response, body) {
-        var count = null;
+        if (err)
+            return callback(err);
 
-        if (!err) {
-            _responseHandler(response, body, function (error, data) {
-                if (error) {
-                    err = error;
-                } else {
-                    count = data.movie_count;
-                }
-            });
-        }
-
-        return callback(err, count);
+        _responseHandler(response, body, function (error, data) {
+            if (error)
+                return callback(error);
+            
+            return callback(null, data.movie_count);
+        });
     });
 };
 
 exports.getMovies = function (page, callback) {
     request(provider.get('list_movies.json?limit=50&page=' + page), function (err, response, body) {
-        var movies = null;
+        if (err)
+            return callback(err);
 
-        if (!err) {
-            _responseHandler(response, body, function (error, data) {
-                if (error) {
-                    err = error;
-                } else {
-                    movies = data.movies;
-                }
-            });
-        }
+        _responseHandler(response, body, function (error, data) {
+            if (error)
+                return callback(error);
 
-        return callback(err, movies);
+            return callback(null, data.movies);
+        });
     });
 };

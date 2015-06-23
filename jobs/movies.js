@@ -1,4 +1,5 @@
 /*jslint node: true */
+
 'use strict';
 
 var utils = require('../utils/common');
@@ -26,9 +27,8 @@ var _count = function () {
     log.info('Counting movies...');
 
     api.countMovies(function (err, count) {
-        if (err) {
+        if (err)
             return log.error('COUNT MOVIES: ', err);
-        }
 
         log.info(count + ' movies counted.');
         emitter.emit('moviesCounted', count);
@@ -46,9 +46,8 @@ var _getMovies = function (count) {
 
     async.timesSeries(pagination, function (page, cbPagination) {
         api.getMovies(page, function (err, movies) {
-            if (err) {
+            if (err)
                 return log.error('GET MOVIES AT ' + page + ': ', err);
-            }
 
             async.eachSeries(movies, function (movie, cbMovies) {
                 moviesList.push(movie);

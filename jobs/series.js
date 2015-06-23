@@ -1,4 +1,5 @@
 /*jslint node: true */
+
 'use strict';
 
 var utils = require('../utils/common');
@@ -27,9 +28,8 @@ var _loadPages = function () {
 
     var pagesList = [];
     api.getPages(function (err, pages) {
-        if (err) {
+        if (err)
             return log.error('GET PAGES: ', err);
-        }
 
         async.eachSeries(pages, function (page, cbPages) {
             pagesList.push(page);
