@@ -81,11 +81,9 @@ var _processTorrentsInformation = function (moviesList) {
                 }
 
                 files.forEach(function (file) {
-                    file = files[file];
-
                     var filename = file.name;
 
-                    if (!utils.endsWith(filename, '.ogg') && !utils.endsWith(filename, '.mp4') && !utils.endsWith(filename, '.webm')) {
+                    if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
                         log.info('File: %s', filename);
                     } else {
                         log.info('Ok');
