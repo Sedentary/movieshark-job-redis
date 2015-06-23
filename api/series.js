@@ -12,7 +12,7 @@ var _responseHandler = function (response, body, callback) {
         try {
             data = JSON.parse(body);
         } catch (ex) {
-            err = 'Error parsing: ' + ex.message;
+            err = 'Error parsing (' + response.statusCode + '): ' + ex;
         }
     } else {
         err = 'Failed with status: ' + response.statusCode;

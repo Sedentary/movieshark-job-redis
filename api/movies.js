@@ -17,7 +17,7 @@ var _responseHandler = function (response, body, callback) {
                 data = data.data;
             }
         } catch (ex) {
-            err = ex.message;
+            err = ex;
         }
     } else {
         err = 'Failed with status: ' + response.statusCode;
