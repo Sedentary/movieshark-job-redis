@@ -22,8 +22,7 @@ var _responseHandler = function (response, body, callback) {
 };
 
 exports.getSeries = function (page, callback) {
-    var url = provider.get(page);
-    request(url, function (err, response, body) {
+    request(provider.get(page), function (err, response, body) {
         var series = null;
 
         if (!err) {
@@ -41,8 +40,7 @@ exports.getSeries = function (page, callback) {
 };
 
 exports.getSerie = function (id, callback) {
-    var url = provider.get('show/' + id);
-    request(url, function (err, response, body) {
+    request(provider.get('show/' + id), function (err, response, body) {
         var serie = null;
 
         if (!err) {
@@ -60,8 +58,7 @@ exports.getSerie = function (id, callback) {
 };
 
 exports.getPages = function (callback) {
-    var url = provider.get('shows');
-    request(url, function (err, response, body) {
+    request(provider.get('shows'), function (err, response, body) {
         var page = null;
 
         if (!err) {

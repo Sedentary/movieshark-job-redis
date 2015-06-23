@@ -27,8 +27,7 @@ var _responseHandler = function (response, body, callback) {
 };
 
 exports.countMovies = function (callback) {
-    var url = provider.get('list_movies.json?limit=1');
-    request(url, function (err, response, body) {
+    request(provider.get('list_movies.json?limit=1'), function (err, response, body) {
         var count = null;
 
         if (!err) {
@@ -46,8 +45,7 @@ exports.countMovies = function (callback) {
 };
 
 exports.getMovies = function (page, callback) {
-    var url = provider.get('list_movies.json?limit=50&page=' + page);
-    request(url, function (err, response, body) {
+    request(provider.get('list_movies.json?limit=50&page=' + page), function (err, response, body) {
         var movies = null;
 
         if (!err) {
