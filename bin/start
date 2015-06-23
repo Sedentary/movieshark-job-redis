@@ -2,7 +2,6 @@
 
 var log = require('../utils/logger')('pm2start', 'PM2 Start')
 var pm2 = require('pm2');
-var cpuCount = require('os').cpus().length;
  
 // pm2.connect(function() {
 //   pm2.start({
@@ -21,7 +20,6 @@ function start () {
       script    : 'app.js',
       exec_mode : 'cluster',
       name: 'movieshark-job-redis',
-      instances : cpuCount,
       max_memory_restart : '510M'
     }, function(err, apps) {
       if (err)
