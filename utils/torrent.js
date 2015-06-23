@@ -40,6 +40,9 @@ exports.getTorrentFiles = function (magnet, callback) {
     var engine = torrentStream(magnet);
 
     engine.on('ready', function () {
-        return callback(null, engine.files);
+        var files = engine.files;
+        engine.destroy();
+
+        return callback(null, files);
     });
 };
