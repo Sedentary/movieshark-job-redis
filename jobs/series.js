@@ -134,7 +134,7 @@ var _processTorrentsInformation = function (torrentsList) {
 
                 var filename = file.name;
 
-                if (!utils.endsWith(filename, '.ogg') && !utils.endsWith(filename, '.mp4') && !utils.endsWith(filename, '.webm')) {
+                if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
                     log.info('File: %s', filename);
                 } else {
                     log.info('Ok');
