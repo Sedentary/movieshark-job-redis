@@ -77,6 +77,7 @@ var _loadEpisodes = function (seriesList) {
             }
 
             async.each(s.episodes, function (episode, cbEpisodes) {
+                log.info('SERIE: ', serie);
                 episodesList.push({serie: serie, episode : episode});
                 cbEpisodes();
             }, function () {
@@ -105,7 +106,6 @@ var _loadTorrents = function (episodesList) {
 
         async.each(epi.torrents, function (torrent, cbTorrents) {
             if (torrent && torrent.url) {
-                log.info('SERIE: ', serie)
                 torrentsList.push({serie : serie, episode : epi, torrent : torrent.url});
             }
             cbTorrents();
