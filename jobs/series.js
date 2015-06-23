@@ -31,7 +31,7 @@ var _loadPages = function () {
             return log.error('GET PAGES: ', err);
         }
 
-        async.each(pages, function (page, cbPages) {
+        async.eachSeries(pages, function (page, cbPages) {
             pagesList.push(page);
             return cbPages();
         }, function () {
@@ -45,14 +45,14 @@ var _loadSeries = function (pagesList) {
     log.info('Processing series...');
 
     var seriesList = [];
-    async.each(pagesList, function (page, cbPages) {
+    async.eachSeries(pagesList, function (page, cbPages) {
         api.getSeries(page, function (err, series) {
             if (err) {
                 log.error('GET SERIES AT ' + page + ': ', err);
                 return cbPages();
             }
 
-            async.each(series, function (serie, cbSeries) {
+            async.eachSeries(series, function (serie, cbSeries) {
                 seriesList.push(serie._id);
                 cbSeries();
             }, function () {
@@ -76,7 +76,7 @@ var _loadEpisodes = function (seriesList) {
                 return cbSeriesList();
             }
 
-            async.each(s.episodes, function (episode, cbEpisodes) {
+            async.eachSeries(s.episodes, function (episode, cbEpisodes) {
                 episodesList.push({serie: serie, episode : episode});
                 cbEpisodes();
             }, function () {
@@ -94,7 +94,7 @@ var _loadTorrents = function (episodesList) {
     log.info('Processing torrents...');
 
     var torrentsList = [];
-    async.each(episodesList, function (episode, cbEpisodesList) {
+    async.eachSeries(episodesList, function (episode, cbEpisodesList) {
         var epi = episode.episode,
             serie = episode.serie;
 
@@ -103,7 +103,7 @@ var _loadTorrents = function (episodesList) {
             return cbEpisodesList();
         }
 
-        async.each(epi.torrents, function (torrent, cbTorrents) {
+        async.eachSeries(epi.torrents, function (torrent, cbTorrents) {
             if (torrent && torrent.url) {
                 torrentsList.push({serie : serie, episode : epi, torrent : torrent.url});
             }
