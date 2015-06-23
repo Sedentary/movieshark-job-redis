@@ -4,6 +4,8 @@
 var scheduler = require('node-schedule');
 var seriesJob = require('./jobs/series');
 var moviesJob = require('./jobs/movies');
+var express = require('express');
+var app = express();
 var log = require('./utils/logger')('main', 'Main');
 
 var _runSeriesJob = function () {
@@ -21,6 +23,13 @@ var _runMoviesJob = function () {
         log.info('Movies job is already running. Waiting till the next tick...');
     }
 };
+
+if (process.env.NODE_ENV !== 'development') {
+    app.set('port', (process.env.PORT || 5000));
+    app.listen(app.get('port'), function() {
+      log.info('Node app is running on port', app.get('port'));
+    });
+}
 
 // Executes every 1 minute(s)
 var _seriesSchedule = scheduler.scheduleJob('*/1 * * * *', _runSeriesJob);
