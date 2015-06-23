@@ -2,6 +2,7 @@
 'use strict';
 
 var scheduler = require('node-schedule');
+var exec = require('child_process').exec;
 var seriesJob = require('./jobs/series');
 var moviesJob = require('./jobs/movies');
 var log = require('./utils/logger')('main', 'Main');
@@ -27,3 +28,8 @@ var _seriesSchedule = scheduler.scheduleJob('*/1 * * * *', _runSeriesJob);
 
 // Executes every 1 minute(s)
 var _moviesSchedule = scheduler.scheduleJob('*/1 * * * *', _runMoviesJob);
+
+process.on('SIGKILL', function () {
+    log.error('Sigkill movieshark');
+    exec('npm start');
+})
