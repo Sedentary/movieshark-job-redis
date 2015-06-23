@@ -126,7 +126,7 @@ var _processTorrentsInformation = function (torrentsList) {
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
                 log.error('Error processing torrent:' + err);
-                return async.setImmediate(cbTorrent());
+                return cbTorrent();
             }
 
             files.forEach(function (file) {
@@ -139,7 +139,7 @@ var _processTorrentsInformation = function (torrentsList) {
                 }
             });
 
-            async.setImmediate(cbTorrent());
+            return cbTorrent();
         });
     }, function () {
         emitter.emit('processFinished');

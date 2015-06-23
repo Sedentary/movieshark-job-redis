@@ -65,7 +65,7 @@ var _getMovies = function (count) {
 var _processTorrentsInformation = function (moviesList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(moviesList, function iterator(movie, cbMovie) {
+    async.eachSeries(moviesList, function (movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
         async.each(movie.torrents, function (torrent, cbTorrent) {
@@ -92,7 +92,7 @@ var _processTorrentsInformation = function (moviesList) {
                 cbTorrent();
             });
         }, function () {
-            async.setImmediate(cbMovie());
+            cbMovie();
         });
     }, function () {
         emitter.emit('processFinished');
