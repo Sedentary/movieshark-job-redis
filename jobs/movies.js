@@ -84,7 +84,16 @@ var _processTorrentsInformation = function (moviesList) {
                     var filename = file.name;
 
                     if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                        log.info('File: %s', filename);
+                        client.get(movie.slug, function (err, movie) {
+                        if (err)
+                            return log.error('Error processing redis: ', err);
+
+                        if (!movie) {
+                            client.rpush('movies-valid', movie);
+                            client.set(movie.slug, movie);
+                            log.info('File: %s', filename);
+                        }
+                    });
                     } else {
                         log.info('Ok');
                     }

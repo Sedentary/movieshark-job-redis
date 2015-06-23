@@ -8,6 +8,7 @@ var events = require('events');
 var async = require('async');
 var api = require('../api/series');
 var torrentUtils = require('../utils/torrent');
+var client = require('../utils/redis').client;
 var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 var emitter = new events.EventEmitter();
@@ -121,7 +122,8 @@ var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
     async.eachSeries(torrentsList, function (torrent, cbTorrent) {
-        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie._id);
+        var serie = torrent.serie;
+        log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + serie._id);
 
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
             if (err) {
@@ -133,8 +135,16 @@ var _processTorrentsInformation = function (torrentsList) {
                 var filename = file.name;
 
                 if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                    log.info('SERIE: ', torrent.serie);
-                    log.info('File: %s', filename);
+                    client.get(serie.slug, function (err, serie) {
+                        if (err)
+                            return log.error('Error processing redis: ', err);
+
+                        if (!serie) {
+                            client.rpush('series-valid', serie);
+                            client.set(serie.slug, serie);
+                            log.info('File: %s', filename);
+                        }
+                    });
                 } else {
                     log.info('Ok');
                 }
