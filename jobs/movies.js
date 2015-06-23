@@ -66,7 +66,7 @@ var _getMovies = function (count) {
 var _processTorrentsInformation = function (moviesList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(moviesList, function (movie, cbMovie) {
+    async.eachLimit(moviesList, 10, function (movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
         async.each(movie.torrents, function (torrent, cbTorrent) {
@@ -86,7 +86,7 @@ var _processTorrentsInformation = function (moviesList) {
                     if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
                         log.info('File: %s', filename);
                     } else {
-                        log.info('Ok');
+                        log.warn('File: %s', filename);
                     }
                 });
 

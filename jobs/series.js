@@ -120,7 +120,7 @@ var _loadTorrents = function (episodesList) {
 var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(torrentsList, function (torrent, cbTorrent) {
+    async.eachLimit(torrentsList, 10, function (torrent, cbTorrent) {
         log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + torrent.serie._id);
 
         torrentUtils.getTorrentFiles(torrent.torrent, function (err, files) {
@@ -132,11 +132,11 @@ var _processTorrentsInformation = function (torrentsList) {
             files.forEach(function (file) {
                 var filename = file.name;
 
+                log.info('SERIE: ', torrent.serie);
                 if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                    log.info('SERIE: ', torrent.serie);
                     log.info('File: %s', filename);
                 } else {
-                    log.info('Ok');
+                    log.warn('File: %s', filename);
                 }
             });
 
