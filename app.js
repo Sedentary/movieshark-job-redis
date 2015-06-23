@@ -29,7 +29,7 @@ var _seriesSchedule = scheduler.scheduleJob('*/1 * * * *', _runSeriesJob);
 // Executes every 1 minute(s)
 var _moviesSchedule = scheduler.scheduleJob('*/1 * * * *', _runMoviesJob);
 
-process.on('SIGKILL', function () {
-    log.error('Sigkill movieshark');
+process.on('exit', function (code) {
+    log.error('Exit code: ', code);
     exec('npm start');
 })
