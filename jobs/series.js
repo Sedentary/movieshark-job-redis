@@ -8,7 +8,6 @@ var events = require('events');
 var async = require('async');
 var api = require('../api/series');
 var torrentUtils = require('../utils/torrent');
-var client = require('../utils/redis').getClient();
 var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 var emitter = new events.EventEmitter();
@@ -121,7 +120,7 @@ var _loadTorrents = function (episodesList) {
 var _processTorrentsInformation = function (torrentsList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(torrentsList, function (torrent, cbTorrent) {
+    async.eachLimit(torrentsList, 10, function (torrent, cbTorrent) {
         var serie = torrent.serie;
         log.info('Processing episode ' + torrent.episode.episode + ' from serie ' + serie._id);
 

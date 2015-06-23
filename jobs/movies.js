@@ -66,7 +66,7 @@ var _getMovies = function (count) {
 var _processTorrentsInformation = function (moviesList) {
     log.info('Processing torrents information...');
 
-    async.eachSeries(moviesList, function (movie, cbMovie) {
+    async.eachLimit(moviesList, 10, function (movie, cbMovie) {
         log.info('Processing movie ' + movie.title);
 
         async.each(movie.torrents, function (torrent, cbTorrent) {
@@ -84,18 +84,18 @@ var _processTorrentsInformation = function (moviesList) {
                     var filename = file.name;
 
                     if (utils.endsWith(filename, '.ogg') || utils.endsWith(filename, '.mp4') || utils.endsWith(filename, '.webm')) {
-                        client.get(movie.slug, function (err, m) {
-                        if (err)
-                            return log.error('Error processing redis: ', err);
+                        client.get(movie.slug, function (err, mov) {
+                            if (err)
+                                return log.error('Error processing redis: ', err);
 
-                        if (!m) {
-                            client.rpush('movies-valid', movie);
-                            client.set(movie.slug, movie);
-                            log.info('File: %s', filename);
-                        }
-                    });
+                            if (!mov) {
+                                client.rpush('movies-valid', movie);
+                                client.set(movie.slug, movie);
+                                log.info('File: %s', filename);
+                            }
+                        });
                     } else {
-                        log.info('Ok');
+                        log.warn('File: %s', filename);
                     }
                 });
 
