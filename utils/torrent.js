@@ -1,3 +1,6 @@
+/*jslint node: true */
+'use strict';
+
 var torrentStream = require('torrent-stream');
 
 exports.magnetize = function (torrent) {
@@ -12,17 +15,20 @@ exports.magnetize = function (torrent) {
         'http://exodus.desync.com:6969/announce'
     ];
 
+    //noinspection JSLint
     var magnet = 'magnet:?xt=urn:btih:' + torrent.hash;
     magnet += '&dn=' + encodeURI(torrent.name);
     trackers.forEach(function (tracker) {
         magnet += '&tr=' + tracker;
     });
+
+    return magnet;
 };
 
 exports.getTorrentFiles = function (magnet, callback) {
     var engine = torrentStream(magnet);
 
-    engine.on('ready', function() {
+    engine.on('ready', function () {
         return callback(null, engine.files);
     });
 };

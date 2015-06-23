@@ -1,5 +1,4 @@
 /*jslint node: true */
-
 'use strict';
 
 var utils = require('../utils/common');
@@ -12,6 +11,8 @@ var log = require('../utils/logger')('moviesJob', 'Movies Job');
 
 var emitter = new events.EventEmitter();
 
+var _isRunning = false;
+
 exports.run = function () {
     emitter.emit('run');
     _isRunning = true;
@@ -20,8 +21,6 @@ exports.run = function () {
 exports.isRunning = function () {
     return _isRunning;
 };
-
-var _isRunning = false;
 
 var _count = function () {
     log.info('Counting movies...');
@@ -40,12 +39,11 @@ var _getMovies = function (count) {
     log.info('Processing movies...');
 
     var limit = 50,
-        pagination = (count / limit);
+        pagination = (count / limit),
+        moviesList = [];
 
-    pagination = (utils.getPrecision(pagination) > 0) ? parseInt(pagination) + 1
-        : parseInt(pagination);
+    pagination = (utils.getPrecision(pagination) > 0) ? parseInt(pagination, 0) + 1 : parseInt(pagination, 0);
 
-    var moviesList = [];
     async.times(pagination, function (page, cbPagination) {
         api.getMovies(page, function (err, movies) {
             if (err) {
@@ -73,8 +71,8 @@ var _processTorrentsInformation = function (moviesList) {
 
         async.each(movie.torrents, function (torrent, cbTorrent) {
             var torr = {
-                name : movie.title_long,
-                hash : torrent.hash
+                name: movie.title_long,
+                hash: torrent.hash
             };
             torrentUtils.getTorrentFiles(torrentUtils.magnetize(torr), function (err, files) {
                 if (err) {
@@ -87,7 +85,7 @@ var _processTorrentsInformation = function (moviesList) {
 
                     var filename = file.name;
 
-                    if (!utils.endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm')) {
+                    if (!utils.endsWith(filename, '.ogg') && !utils.endsWith(filename, '.mp4') && !utils.endsWith(filename, '.webm')) {
                         log.info('File: %s', filename);
                     } else {
                         log.info('Ok');

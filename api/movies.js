@@ -1,3 +1,4 @@
+/*jslint node: true */
 'use strict';
 
 var request = require('request');
@@ -19,7 +20,7 @@ var _responseHandler = function (response, body, callback) {
             err = ex.message;
         }
     } else {
-        err = 'Failed with status: ' + response.statusCode
+        err = 'Failed with status: ' + response.statusCode;
     }
 
     callback(err, data);

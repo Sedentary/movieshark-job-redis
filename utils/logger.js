@@ -1,3 +1,6 @@
+/*jslint node: true */
+'use strict';
+
 var winston = require('winston');
 
 module.exports = function (name, label) {

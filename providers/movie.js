@@ -1,5 +1,4 @@
 /*jslint node: true */
-
 'use strict';
 
 var _base = 'https://yts.to/api/v2/';

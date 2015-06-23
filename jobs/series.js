@@ -1,5 +1,4 @@
 /*jslint node: true */
-
 'use strict';
 
 var utils = require('../utils/common');
@@ -12,6 +11,8 @@ var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 var emitter = new events.EventEmitter();
 
+var _isRunning = false;
+
 exports.run = function () {
     emitter.emit('run');
     _isRunning = true;
@@ -20,8 +21,6 @@ exports.run = function () {
 exports.isRunning = function () {
     return _isRunning;
 };
-
-var _isRunning = false;
 
 var _loadPages = function () {
     log.info('Processing pages...');
@@ -85,7 +84,7 @@ var _loadEpisodes = function (seriesList) {
             });
 
         });
-    }, function() {
+    }, function () {
         log.info(episodesList.length + ' episodes loaded.');
         emitter.emit('episodesLoaded', episodesList);
     });
@@ -96,8 +95,8 @@ var _loadTorrents = function (episodesList) {
 
     var torrentsList = [];
     async.each(episodesList, function (episode, cbEpisodesList) {
-        var epi = episode.episode;
-        var serie = episode.serie;
+        var epi = episode.episode,
+            serie = episode.serie;
 
         if (!epi || !epi.torrents) {
             log.error('Episode ' + epi.episode + ' from serie ' + serie + ' has problems.');
@@ -130,12 +129,12 @@ var _processTorrentsInformation = function (torrentsList) {
                 return async.setImmediate(cbTorrent());
             }
 
-            files.forEach(function(file) {
+            files.forEach(function (file) {
                 file = files[file];
 
                 var filename = file.name;
 
-                if (!utils.endsWith(filename, '.ogg') && !_endsWith(filename, '.mp4') && !_endsWith(filename, '.webm') ) {
+                if (!utils.endsWith(filename, '.ogg') && !utils.endsWith(filename, '.mp4') && !utils.endsWith(filename, '.webm')) {
                     log.info('File: %s', filename);
                 } else {
                     log.info('Ok');
