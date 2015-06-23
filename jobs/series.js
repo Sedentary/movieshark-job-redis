@@ -8,7 +8,7 @@ var events = require('events');
 var async = require('async');
 var api = require('../api/series');
 var torrentUtils = require('../utils/torrent');
-var client = require('../utils/redis').client;
+var client = require('../utils/redis').getClient();
 var log = require('../utils/logger')('seriesJob', 'Series Job');
 
 var emitter = new events.EventEmitter();

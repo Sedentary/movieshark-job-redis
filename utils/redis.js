@@ -18,4 +18,6 @@ client.on('ready', function callback() {
     log.info("Connected to Redis!");
 });
 
-module.exports = redis;
+exports.getClient = function () {
+    return client;
+}
