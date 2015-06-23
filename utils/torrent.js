@@ -1,6 +1,8 @@
 /*jslint node: true */
+
 'use strict';
 
+var readTorrent = require('read-torrent');
 var torrentStream = require('torrent-stream');
 
 exports.magnetize = function (torrent) {
@@ -26,6 +28,15 @@ exports.magnetize = function (torrent) {
 };
 
 exports.getTorrentFiles = function (magnet, callback) {
+    // readTorrent(magnet, function (err, torrent) {
+    //     if (err)
+    //         return callback(err);
+
+    //     console.log(torrent);
+
+    //     return callback(null, torrent.files)
+    // })
+
     var engine = torrentStream(magnet);
 
     engine.on('ready', function () {
