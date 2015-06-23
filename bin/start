@@ -20,6 +20,7 @@ function start () {
       script    : 'app.js',
       exec_mode : 'cluster',
       name: 'movieshark-job-redis',
+      instances: 1,
       max_memory_restart : '510M'
     }, function(err, apps) {
       if (err)
