@@ -7,13 +7,11 @@ var provider = require('../providers/movie');
 
 var _responseHandler = function (response, body, callback) {
     if (response.statusCode >= 200 && response.statusCode < 400) {
-        try {
-            var data = JSON.parse(body);
-            
-            if (data.status !== 'ok')
+        try {           
+            if (body.status !== 'ok')
                 return callback('Query failed');
             
-            return callback(null, data.data);
+            return callback(null, body.data);
         } catch (ex) {
             return callback(ex);
         }
@@ -23,7 +21,10 @@ var _responseHandler = function (response, body, callback) {
 };
 
 exports.countMovies = function (callback) {
-    request(provider.get('list_movies.json?limit=1'), function (err, response, body) {
+    request({
+        url: provider.get('list_movies.json?limit=1'),
+        json: true
+    }, function (err, response, body) {
         if (err)
             return callback(err);
 
@@ -37,7 +38,10 @@ exports.countMovies = function (callback) {
 };
 
 exports.getMovies = function (page, callback) {
-    request(provider.get('list_movies.json?limit=50&page=' + page), function (err, response, body) {
+    request({
+        url: provider.get('list_movies.json?limit=50&page=' + page),
+        json: true
+    }, function (err, response, body) {
         if (err)
             return callback(err);
 

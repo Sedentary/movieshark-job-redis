@@ -8,8 +8,7 @@ var provider = require('../providers/serie');
 var _responseHandler = function (response, body, callback) {
     if (response.statusCode >= 200 && response.statusCode < 400) {
         try {
-            var data = JSON.parse(body);
-            return callback(null, data);
+            return callback(null, body);
         } catch (ex) {
             return callback('Error parsing (' + response.statusCode + '): ' + ex);
         }
@@ -19,7 +18,10 @@ var _responseHandler = function (response, body, callback) {
 };
 
 exports.getSeries = function (page, callback) {
-    request(provider.get(page), function (err, response, body) {
+    request({
+        url: provider.get(page),
+        json: true
+    }, function (err, response, body) {
         if (err)
             return callback(err);
 
@@ -33,7 +35,10 @@ exports.getSeries = function (page, callback) {
 };
 
 exports.getSerie = function (id, callback) {
-    request(provider.get('show/' + id), function (err, response, body) {
+    request({
+        url: provider.get('show/' + id),
+        json: true
+    }, function (err, response, body) {
         if (err)
             return callback(err);
         
@@ -47,7 +52,10 @@ exports.getSerie = function (id, callback) {
 };
 
 exports.getPages = function (callback) {
-    request(provider.get('shows'), function (err, response, body) {
+    request({
+        url: provider.get('shows'),
+        json: true
+    }, function (err, response, body) {
         if (err)
             return callback(err);
 
